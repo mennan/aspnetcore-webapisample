@@ -9,16 +9,40 @@ namespace University.Controllers
 {
     public class StudentsController : BaseV1Controller
     {
-        // GET api/values
+        int page = 1;
+        int itemCount = 50;
+
+        // GET v1/Students?page=1&count=600
+        /// <summary>
+        /// List students
+        /// </summary>
+        /// <param name="page">Page number</param>
+        /// <param name="count">Total Item Count</param>
+        /// <returns></returns>
         [HttpGet]
-        public ActionResult<ApiReturn<IEnumerable<StudentModel>>> Get()
+        [ProducesResponseType(200, Type = typeof(ApiPagedReturn<IEnumerable<StudentModel>>))]
+        [ProducesResponseType(400, Type = typeof(ApiPagedReturn<int>))]
+        public ActionResult<ApiPagedReturn<IEnumerable<StudentModel>>> Get([FromQuery] int page, [FromQuery] int count)
         {
-            var returnData = new ApiReturn<IEnumerable<StudentModel>>
+            if(count > 50)
+            {
+                count = 50;
+            }
+
+            var totalItemCount = Convert.ToDouble(Students.Count);
+            var convertedCount = Convert.ToDouble(count);
+            var totalPage = Math.Ceiling(totalItemCount / convertedCount);
+            var pagedData = Students.Skip(page * count - count).Take(count).ToList();
+
+            var returnData = new ApiPagedReturn<IEnumerable<StudentModel>>
             {
                 Code = 200,
                 Success = true,
                 Message = "Students listed successfully.",
-                Data = Students
+                Data = pagedData,
+                TotalItemCount = (int)totalItemCount,
+                TotalPage = (int)totalPage,
+                CurrentPage = page
             };
 
             return returnData;
@@ -51,7 +75,7 @@ namespace University.Controllers
                 Message = "Student found successfully.",
                 Data = student
             };
-
+            return StatusCode(201, returnData);
             return returnData;
         }
 
